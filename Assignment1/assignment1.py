@@ -9,6 +9,7 @@
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_predict
 import numpy as np
 import pandas as pd
 
@@ -20,8 +21,8 @@ def classify_knn(data, k):
 
     # Fit training samples against sample labels
     neighbors = KNeighborsClassifier(n_neighbors=k, metric='euclidean')
-    neighbors.fit(coord_train, class_train)
 
+    neighbors.fit(coord_train, class_train)
 
     # Score the training fit compared against the test samples
     print("KNN with k =", k, " classifier score: ", neighbors.score(coord_test, class_test))
@@ -75,7 +76,8 @@ def main():
 
         print(filename)
 
-        classify_knn(data, 1)
+        for i in range(7):
+            classify_knn(data, i+1)
         classify_naive_bayes(data)
         print()
 
