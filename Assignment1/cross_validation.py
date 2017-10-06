@@ -41,31 +41,46 @@ def npv(tn, fn):
 
 
 
+# Convenience function to test all measures of efficiency
+def test_efficiency(statistics):
+
+    tn, fp, fn, tp = statistics
+
+    # Score the training fit compared against the test samples
+    print("Accuracy:   \t", accuracy(tn, fp, fn, tp))
+    print("Sensitivity:\t", sensitivity(tp, fn))
+    print("Specificity:\t", specificity(tn, fp))
+    print("PPV:        \t", ppv(tp, fp))
+    print("NPV:        \t", npv(tn, fn))
+    print()
+
+
+
 
 def classify_knn(examples, labels, k):
+    print("K Nearest Neighbor Classifier with k =", k)
 
     # Fit training samples against sample labels
     neighbors = KNeighborsClassifier(n_neighbors=k, metric='euclidean')
 
     # Use confusion matrix to extract statistics on cross validated prediction
     prediction = cross_val_predict(neighbors, examples, labels, cv=10)
-    tn, fp, fn, tp = confusion_matrix(labels, prediction).ravel()
+    statistics = confusion_matrix(labels, prediction).ravel()
 
-    # Score the training fit compared against the test samples
-    print("K Nearest Neighbor Classifier with k =", k)
-    print("Accuracy:   \t", accuracy(tn, fp, fn, tp))
-    print("Sensitivity:\t", sensitivity(tp, fn))
-    print("Specificity:\t", specificity(tn, fp))
-    print("PPV:        \t", ppv(tp, fp))
-    print("NPV:        \t", npv(tn, fn))
+    test_efficiency(statistics)
 
 
 
-# TODO
 def classify_naive_bayes(examples, labels):
+    print("Naive Bayes Gaussian Classifier")
 
-    print()
-    #gnb = GaussianNB()
+    bayes = GaussianNB()
+
+    # Confusion matrix will extract Naive Bayes  prediction results
+    prediction = cross_val_predict(bayes, examples, labels, cv=10)
+    statistics = confusion_matrix(labels, prediction).ravel()
+
+    test_efficiency(statistics)
 
 
 
@@ -74,19 +89,11 @@ def split_data(filename):
     # Read data into 2D array of samples  eg. [[-1.9, 2.4, 1], [...], ...]
     data = pd.read_csv(filename, header=None).as_matrix()
 
-    # Split into parts
+    # Split input CSV into parts
+    # s[0]-Empty , s[1]-2D array of sample data , s[2]-2D array of labels
+
     s = np.split(data, [0, 2, 3], axis=1)
-
-    # Isolate 2D array of feature samples  eg.[[-1.9, 2.4], [...], ...]
-    samples = s[1]
-
-    # Isolate 2D array of labels  eg. [[1], [1], ... [2], [2]]
-    labels = s[2]
-
-    # Consolidate labels 2D array into one big 1D array
-    reformatted_labels = np.reshape(labels, np.size(labels))
-
-    return samples, reformatted_labels
+    return s[1], np.reshape(s[2], np.size(s[2]))
 
 
 
@@ -99,7 +106,8 @@ def main():
     for filename in input_files:
         examples, labels = split_data(filename)
 
-        print(filename)
+        print("-------------------------------")
+        print(filename, "\n-------------------------------")
 
         classify_knn(examples, labels, 1)
         classify_naive_bayes(examples, labels)
