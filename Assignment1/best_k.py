@@ -1,11 +1,9 @@
 #
 # Classifiers (10 Fold Cross Validation)
-# 60-473 Assignment 1 Q2
+# 60-473 Assignment 1 Q4
 #
-# Use k-NN classifier with the Euclidean distance function, where k = 1,
-# on all four datasets provided. 10 Fold Cross Validation must be used to
-# evaulate the classifications on each dataset, and efficiency measures
-# must be reported.
+# Determine the 'best' value of k for the K Nearest Neighbor classifier.
+# Compare its efficiency with that of the 1-NN and Naive Bayes classifier.
 #
 
 from sklearn.neighbors import KNeighborsClassifier
@@ -41,45 +39,49 @@ def npv(tn, fn):
 
 
 
-# Convenience function to test all measures of efficiency
-def test_efficiency(statistics):
+# Determine the value of k that yeilds the most accurate KNN classifier
+def find_best_k_knn(examples, labels):
+    best_acc = 0.0
+    best_k = -1
+    temp = []
 
-    tn, fp, fn, tp = statistics
+    for k in range(200):
 
-    # Score the training fit compared against the test samples
-    print("Accuracy:   \t", accuracy(tn, fp, fn, tp))
-    print("Sensitivity:\t", sensitivity(tp, fn))
-    print("Specificity:\t", specificity(tn, fp))
-    print("PPV:        \t", ppv(tp, fp))
-    print("NPV:        \t", npv(tn, fn))
-    print()
+        # Determine accuracy of KNN with k
+        tn, fp, fn, tp = classify_knn(examples, labels, k+1)
+        acc = accuracy(tn, fp, fn, tp)
+        temp.append(acc)
+        if acc > best_acc:
+            best_acc = acc
+            best_k = k+1
+
+    # Uncomment to see all accuracy readings sequentially for all k's
+    #for v in temp:
+    #    print("%.3f " % v, end=" ")
+    #print()
+
+    return best_k, best_acc
 
 
 
 def classify_knn(examples, labels, k):
-    print("K Nearest Neighbor Classifier with k =", k)
 
     # Fit training samples against sample labels
     neighbors = KNeighborsClassifier(n_neighbors=k, metric='euclidean')
 
     # Use confusion matrix to extract statistics on cross validated prediction
     prediction = cross_val_predict(neighbors, examples, labels, cv=10)
-    statistics = confusion_matrix(labels, prediction).ravel()
-
-    test_efficiency(statistics)
+    return confusion_matrix(labels, prediction).ravel()
 
 
 
 def classify_naive_bayes(examples, labels):
-    print("Naive Bayes Gaussian Classifier")
 
     bayes = GaussianNB()
 
     # Confusion matrix will extract Naive Bayes  prediction results
     prediction = cross_val_predict(bayes, examples, labels, cv=10)
-    statistics = confusion_matrix(labels, prediction).ravel()
-
-    test_efficiency(statistics)
+    return confusion_matrix(labels, prediction).ravel()
 
 
 
@@ -103,14 +105,25 @@ def main():
             "twospirals.csv", "clusterincluster.csv"]
 
 
+    #input_files = ["twogaussians.csv"]
+
     for filename in input_files:
         examples, labels = split_data(filename)
 
         print("-------------------------------")
         print(filename, "\n-------------------------------")
 
-        classify_knn(examples, labels, 1)
-        classify_naive_bayes(examples, labels)
+
+        best_k, best_acc = find_best_k_knn(examples, labels)
+        print("Best k for KNN classifier on", filename, "is", best_k, "with", best_acc)
+
+
+        tn, fp, fn, tp = classify_knn(examples, labels, 1)
+        print("The accuracy of KNN with k=1 is", accuracy(tn, fp, fn, tp))
+
+        tn, fp, fn, tp = classify_naive_bayes(examples, labels)
+        print("The accuracy of Naive Bayes is", accuracy(tn, fp, fn, tp))
+
         print()
 
 
