@@ -1,6 +1,6 @@
 #
 # Classifiers (10 Fold Cross Validation)
-# 60-473 Assignment 1 Q2
+# 60-473 Assignment 1 Q2 / Q3
 #
 # Use k-NN classifier with the Euclidean distance function, where k = 1,
 # on all four datasets provided. 10 Fold Cross Validation must be used to
