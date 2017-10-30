@@ -1,8 +1,11 @@
 #
 # Testing the SVM Classifiers
-# 60-473 Assignment 2 Q2
+# 60-473 Assignment 2 Q3
 #
-# Test out the linear, polynomial and RBF kernel SVM classifiers.
+# Run all three variations of the SVM classifier on all four datasets,
+# using 10 fold cross validation. For each of the three classifiers,
+# output their average PPV, NPV, specificity, sensitivity and accuracy
+# performance across the datasets.
 #
 
 from sklearn import svm
@@ -15,29 +18,43 @@ import pandas as pd
 def svm_linear(samples, labels):
 
     classifier = svm.SVC(kernel='linear')
-
-    print("Fitting SVM Classifier with linear kernel... ", end='')
     classifier.fit(samples, labels)
-    print("Done")
 
 # SVM Classifier using deg. 2 polynomial kernel
 def svm_polynomial(samples, labels):
 
     classifier = svm.SVC(kernel='poly', degree=2)
-
-    print("Fitting SVM Classifier with polynomial kernel... ", end='')
     classifier.fit(samples, labels)
-    print("Done")
 
 
 # SVM Classifier using RBF
 def svm_rbf(samples, labels):
 
     classifier = svm.SVC(kernel='rbf')
-
-    print("Fitting SVM Classifier with rbf kernel... ", end='')
     classifier.fit(samples, labels)
-    print("Done")
+
+
+
+# Proportion of successful predictions
+def accuracy(tn, fp, fn, tp):
+    return ((tp+tn) / float(tp+fp+tn+fn))
+
+# Of all that should be classified as Positive, how many were?
+def sensitivity(tp, fn):
+    return (tp / float(tp+fn))
+
+# Of all that should be classified as Negative, how many were?
+def specificity(tn, fp):
+    return (tn / float(tn+fp))
+
+# Of all classified as Positive, how many were correctly classified?
+def ppv(tp, fp):
+    return (tp / float(tp+fp))
+
+# Of all classified as Negative, how many were correcly classified?
+def npv(tn, fn):
+    return (tn / float(tn+fn))
+
 
 
 
