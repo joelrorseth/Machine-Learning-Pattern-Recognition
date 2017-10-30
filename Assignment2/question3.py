@@ -57,22 +57,6 @@ def svm_rbf(samples, labels):
     return calculate_efficiency(statistics)
 
 
-
-# Return 5-tuple corresponding to the 5 calculated measures of efficiency
-def calculate_efficiency(statistics):
-
-    tn, fp, fn, tp = statistics
-
-    # Score the training fit compared against the test samples
-    return accuracy(tn, fp, fn, tp), sensitivity(tp, fn),\
-# SVM Classifier using RBF
-def svm_rbf(samples, labels):
-
-    classifier = svm.SVC(kernel='rbf')
-    #classifier.fit(samples, labels)
-
-
-
 # Return 5-tuple corresponding to the 5 calculated measures of efficiency
 def calculate_efficiency(statistics):
 
