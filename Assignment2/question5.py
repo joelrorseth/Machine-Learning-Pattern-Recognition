@@ -31,8 +31,8 @@ def svm_rbf(samples, labels):
     # TODO: I think the positive class should be 1, but it didnt look right
     fpr, tpr, thresholds = roc_curve(y_test, test_scores, pos_label=2)
 
-    # TODO: Calculate AUC
-    roc_auc = 0
+    # Calculate AUC
+    roc_auc = auc(fpr, tpr)
     return fpr, tpr, roc_auc
 
 
