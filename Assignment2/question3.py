@@ -17,47 +17,24 @@ import pandas as pd
 
 
 # SVM Classifier using linear kernel
-def svm_linear(samples, labels):
-
-    classifier = svm.SVC(kernel='linear')
-
-    # Use confusion matrix to extract statistics on cross validated prediction
-    prediction = cross_val_predict(classifier, samples, labels, cv=10)
-    statistics = confusion_matrix(labels, prediction).ravel()
-
-    return calculate_efficiency(statistics)
-
-
+def svm_linear():
+    return svm.SVC(kernel='linear')
 
 # SVM Classifier using deg. 2 polynomial kernel
-def svm_polynomial(samples, labels):
-
-    classifier = svm.SVC(kernel='poly', degree=2)
-
-    # Use confusion matrix to extract statistics on cross validated prediction
-    prediction = cross_val_predict(classifier, samples, labels, cv=10)
-    statistics = confusion_matrix(labels, prediction).ravel()
-
-    return calculate_efficiency(statistics)
-
-
+def svm_polynomial():
+    return svm.SVC(kernel='poly', degree=2)
 
 # SVM Classifier using RBF
-def svm_rbf(samples, labels):
-
-    classifier = svm.SVC(kernel='rbf')
-
-    # Use confusion matrix to extract statistics on cross validated prediction
-    prediction = cross_val_predict(classifier, samples, labels, cv=10)
-    statistics = confusion_matrix(labels, prediction).ravel()
-
-    return calculate_efficiency(statistics)
+def svm_rbf():
+    return svm.SVC(kernel='rbf')
 
 
 # Return 5-tuple corresponding to the 5 calculated measures of efficiency
-def calculate_efficiency(statistics):
+def calculate_efficiency(classifier, samples, labels):
 
-    tn, fp, fn, tp = statistics
+    # Use confusion matrix to extract statistics on cross validated prediction
+    prediction = cross_val_predict(classifier, samples, labels, cv=10)
+    tn, fp, fn, tp = confusion_matrix(labels, prediction).ravel()
 
     # Score the training fit compared against the test samples
     return accuracy(tn, fp, fn, tp), sensitivity(tp, fn),\
@@ -67,12 +44,9 @@ def calculate_efficiency(statistics):
 # Print all measures out nicely
 def print_efficiency(acc, sens, spec, ppv, npv):
 
-    print("Accuracy:   \t", acc)
-    print("Sensitivity:\t", sens)
-    print("Specificity:\t", spec)
-    print("PPV:        \t", ppv)
-    print("NPV:        \t", npv)
-    print()
+    print("Accuracy:\t%.4f\nSensitivity:\t%.4f\nSpecificity:\t%.4f\nPPV:\t\t%.4f\nNPV:\t\t%.4f\n"
+            % (acc, sens, spec, ppv, npv))
+
 
 
 # Proportion of successful predictions
@@ -136,8 +110,9 @@ def main():
 
             print(classifier_names[i], "on", filename)
 
-            # Call the classifier, add results to others from other files
-            acc, sen, spec, ppv, npv = classifier(samples, labels)
+            # Instantiate classifier, calculate and print efficiency
+            c = classifier()
+            acc, sen, spec, ppv, npv = calculate_efficiency(c, samples, labels)
             print_efficiency(acc, sen, spec, ppv, npv)
 
         print()
