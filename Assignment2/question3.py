@@ -20,7 +20,6 @@ import pandas as pd
 def svm_linear(samples, labels):
 
     classifier = svm.SVC(kernel='linear')
-    #classifier.fit(samples, labels)
 
     # Use confusion matrix to extract statistics on cross validated prediction
     prediction = cross_val_predict(classifier, samples, labels, cv=10)
@@ -34,7 +33,6 @@ def svm_linear(samples, labels):
 def svm_polynomial(samples, labels):
 
     classifier = svm.SVC(kernel='poly', degree=2)
-    #classifier.fit(samples, labels)
 
     # Use confusion matrix to extract statistics on cross validated prediction
     prediction = cross_val_predict(classifier, samples, labels, cv=10)
@@ -48,7 +46,6 @@ def svm_polynomial(samples, labels):
 def svm_rbf(samples, labels):
 
     classifier = svm.SVC(kernel='rbf')
-    #classifier.fit(samples, labels)
 
     # Use confusion matrix to extract statistics on cross validated prediction
     prediction = cross_val_predict(classifier, samples, labels, cv=10)
@@ -117,13 +114,11 @@ def split_data(filename):
 
 def main():
 
-    classifier_names = ["SVM Classifier (Linear Kernel)",\
-            "SVM Classifier (Polynomial Kernel, Degree = 2)",
-            "SVM Classifier (RBF)"]
+    classifier_names = ["SVM-L: Linear Kernel",\
+            "SVM-P: Polynomial Kernel", "SVM-R: RBF"]
     input_files = ["twogaussians.csv", "halfkernel.csv", \
             "twospirals.csv", "clusterincluster.csv"]
 
-    counter = 0
 
     # Read in and format all 4 datasets into map
     filedata = {}
@@ -131,16 +126,7 @@ def main():
         filedata[filename] = split_data(filename)
 
     # Run each SVM classifier
-    for classifier in [svm_linear, svm_polynomial, svm_rbf]:
-        acc = 0.0
-        sen = 0.0
-        spec = 0.0
-        ppv = 0.0
-        npv = 0.0
-
-        print("Now running", classifier_names[counter])
-        print()
-        counter += 1
+    for i, classifier in enumerate([svm_linear, svm_polynomial, svm_rbf]):
 
         # Test current classifier against every CSV
         for filename in input_files:
@@ -148,25 +134,12 @@ def main():
             # Grab data for this CSV
             samples, labels = filedata[filename]
 
-            print("Evaluating", filename + "...")
+            print(classifier_names[i], "on", filename)
 
             # Call the classifier, add results to others from other files
-            t_acc, t_sen, t_spec, t_ppv, t_npv = classifier(samples, labels)
-            acc += t_acc
-            sen += t_sen
-            spec += t_spec
-            ppv += t_ppv
-            npv += t_npv
+            acc, sen, spec, ppv, npv = classifier(samples, labels)
+            print_efficiency(acc, sen, spec, ppv, npv)
 
-        # Compute and print averages for each measure of efficiency
-        acc /= 4
-        sen /= 4
-        spec /= 4
-        ppv /= 4
-        npv /= 4
-
-        print("\nSummary\n---------------------------------")
-        print_efficiency(acc, sen, spec, ppv, npv)
         print()
 
 main()
