@@ -28,7 +28,6 @@ def svm_rbf(samples, labels):
     test_scores = classifier.fit(X_train, y_train).decision_function(X_test)
 
     # Find True and False Positive rate for ROC curve
-    # TODO: I think the positive class should be 1, but it didnt look right
     fpr, tpr, thresholds = roc_curve(y_test, test_scores, pos_label=2)
 
     # Calculate AUC
