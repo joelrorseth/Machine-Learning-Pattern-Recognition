@@ -11,6 +11,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -22,6 +23,16 @@ def kmeans(samples):
 # Create an Expectation Maximization object that uses Gaussian models
 def em(samples):
     return GaussianMixture(n_components=2).fit(samples)
+
+
+# Graph samples
+def graph_samples(samples):
+
+    for index in range(0, len(samples)):
+        plt.scatter(samples[index, 0], samples[index, 1])
+
+    plt.title("Sample")
+    plt.show()
 
 
 
@@ -50,6 +61,8 @@ def main():
         kmeans_classifier = kmeans(samples)
         em_classifier = em(samples)
 
-    print()
+
+    #graph_samples(samples)
+    #print()
 
 main()
