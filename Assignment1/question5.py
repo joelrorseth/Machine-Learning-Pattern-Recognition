@@ -26,7 +26,7 @@ def classify_knn(title, i, data, k):
 
     styles = ['>', '<', 's', 'o']
     colors = ['b', 'r', 'g', 'y']
-    
+
     # Plot data from dataset
     X = examples_train
     y = labels_train
