@@ -52,8 +52,10 @@ def main():
         # Remove / separate class labels from dataset
         samples, labels = split_data(filename)
 
-        kmeans_best = -1
-        em_best = -1
+        kmeans_best_score = -1
+        kmeans_best_k = -1
+        em_best_score = -1
+        em_best_k = -1
 
         print("Evaluating \'K\' for", filename)
 
@@ -67,8 +69,11 @@ def main():
             kmeans_classifier = kmeans(k+2, samples)
             kmeans_pred = kmeans_classifier.fit_predict(samples)
 
+            # Check CH Index for score of clustering model
             score = ch_index(samples, kmeans_pred)
-            kmeans_best = score if score > kmeans_best
+            if score > kmeans_best_score:
+                kmeans_best_score = score
+                kmeans_best_k = k+2
 
             print("{}\t{:0.4f}".format(k+2, score))
 
@@ -81,8 +86,15 @@ def main():
 
             em_classifier = em(k+2, samples)
             em_pred = em_classifier.predict(samples)
-            print("{}\t{:0.4f}".format(k+2, ch_index(samples, em_pred)))
 
-        print("\n\n")
+            # Check CH Index for score of clustering model
+            score = ch_index(samples, em_pred)
+            if score > em_best_score:
+                em_best_score = score
+                em_best_k = k+2
+
+            print("{}\t{:0.4f}".format(k+2, score))
+
+        print("\nBest k for KMeans: {}\nBest k for EM: {}\n\n".format(kmeans_best_k, em_best_k))
 
 main()
