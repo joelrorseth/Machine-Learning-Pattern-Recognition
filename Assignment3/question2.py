@@ -45,9 +45,14 @@ def split_data(filename):
 
 def main():
 
+    km_best_ks = []
+    em_best_ks = []
+
     # Read in and format all 4 datasets into map
-    for filename in ["twogaussians.csv", "halfkernel.csv",
-            "twospirals.csv", "clusterincluster.csv"]:
+    files = ["twogaussians.csv", "halfkernel.csv", \
+            "twospirals.csv", "clusterincluster.csv"]
+
+    for filename in files:
 
         # Remove / separate class labels from dataset
         samples, labels = split_data(filename)
@@ -57,44 +62,43 @@ def main():
         em_best_score = -1
         em_best_k = -1
 
-        print("Evaluating \'K\' for", filename)
+        print("\nEvaluating \'K\' for", filename)
 
         # Test K-Means clustering model with different k values
-        print("----------------")
-        print("K-Means\nK\tScore")
-        print("----------------")
+        print("----------------------------------")
+        print(" K\tK-Means Score\tEM Score")
+        print("----------------------------------")
 
-        for k in range(9):
+        for k in range(99):
 
             kmeans_classifier = kmeans(k+2, samples)
             kmeans_pred = kmeans_classifier.fit_predict(samples)
 
             # Check CH Index for score of clustering model
-            score = ch_index(samples, kmeans_pred)
-            if score > kmeans_best_score:
-                kmeans_best_score = score
+            km_score = ch_index(samples, kmeans_pred)
+            if km_score > kmeans_best_score:
+                kmeans_best_score = km_score
                 kmeans_best_k = k+2
-
-            print("{}\t{:0.4f}".format(k+2, score))
-
-        # Test EM clustering model with different k values
-        print("\n----------------")
-        print("EM\nK\tScore")
-        print("----------------")
-
-        for k in range(9):
 
             em_classifier = em(k+2, samples)
             em_pred = em_classifier.predict(samples)
 
             # Check CH Index for score of clustering model
-            score = ch_index(samples, em_pred)
-            if score > em_best_score:
-                em_best_score = score
+            em_score = ch_index(samples, em_pred)
+            if em_score > em_best_score:
+                em_best_score = em_score
                 em_best_k = k+2
 
-            print("{}\t{:0.4f}".format(k+2, score))
+            print(" {}\t{:0.4f}\t{:0.4f}".format(k+2, km_score, em_score))
 
-        print("\nBest k for KMeans: {}\nBest k for EM: {}\n\n".format(kmeans_best_k, em_best_k))
+
+        # Track best results across all k for each dataset
+        km_best_ks.append(kmeans_best_k)
+        em_best_ks.append(em_best_k)
+
+    print()
+    for (i, f) in enumerate(files):
+        print("Best k for {}\nKMeans: {}\nEM: {}\n"\
+                .format(f, km_best_ks[i], em_best_ks[i]))
 
 main()

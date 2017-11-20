@@ -6,8 +6,6 @@
 # (EM), where k = 2 for both algorithms.
 #
 
-from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import confusion_matrix
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
 
@@ -28,9 +26,6 @@ def em(samples):
 
 # Graph samples
 def graph_samples(name, samples, given_labels, clustered_labels):
-
-    #styles = ['>', '<', 's', 'o']
-    #colors = ['b', 'r', 'g', 'y']
 
     for i in range(0, len(samples)):
         color = 'b' if given_labels[i] == 1 else 'r'
