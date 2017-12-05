@@ -18,9 +18,10 @@
 #
 
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import cross_val_score, cross_val_predict
 from sklearn.metrics import confusion_matrix
-
+from sklearn import svm
+from collections import Counter
 import numpy as np
 import pandas as pd
 
@@ -47,17 +48,56 @@ def npv(tn, fn):
     return (tn / float(tn+fn))
 
 
+def calculate_efficiency(classifier, samples, labels):
+
+    pred = cross_val_predict(classifier, samples, labels, cv=5)
+    score = cross_val_score(classifier, samples, labels, cv=5, scoring="accuracy")
+
+    print("Accuracy:", score)
+    print("Average accuracy over all runs:", np.average(score))
+
+    conf_matrix = confusion_matrix(labels, pred)
+    print("Confusion Matrix:\n", conf_matrix)
+
+
+
+# SVM Classifier
+def svm_classifier():
+    return svm.SVC(kernel='rbf', C=1, gamma=1)
+
+
 # Data formatting
 def split_data(filename):
 
     data = pd.read_csv(filename, header=0).as_matrix()
 
+    # TODO: There appears to be 4 superclasses: Ta, T1, T2 and Ti
+    # TODO: For now we will throw out those samples classified as Ti
+    # TODO: There is too few Ti samples (2), doesnt work out nicely
+
+    def legit(a):
+        return not a[0].startswith('Ti')
+
+    bool_arr = np.array([ legit(row) for row in data ])
+    filtered = data[bool_arr]
+
+
     # Split input CSV into parts
     # s[0]-2D array of labels , s[1]-2D array of sample data
 
-    s = np.split(data, [1], axis=1)
+    s = np.split(filtered, [1], axis=1)
 
-    return s[1], np.reshape(s[0], np.size(s[0]))
+    #samples = np.array(filter(lambda a: !a[0].startswith('Ti'), s[1]))
+
+    # Simplify all labels to their inherent groupings (eg. T1, T2, Ta)
+    labels = np.reshape(s[0], np.size(s[0]))
+    labels = [cancer[:2] for cancer in labels]
+
+    # Uncomment to see sample size for each class
+    #c = Counter(labels)
+    #print(c)
+
+    return s[1], labels
 
 
 def main():
@@ -65,9 +105,8 @@ def main():
     filename = "Bladder cancer gene expressions.csv"
     samples, labels = split_data(filename)
 
-    #tn, fp, fn, tp = classifier(samples, labels)
-    #print("The accuracy of ___  is", accuracy(tn, fp, fn, tp))
+    c = svm_classifier()
+    calculate_efficiency(c, samples, labels)
 
-    print()
 
 main()
