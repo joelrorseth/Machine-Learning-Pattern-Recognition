@@ -21,12 +21,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score, cross_val_predict
 from sklearn.metrics import confusion_matrix
 from sklearn import svm
+from sklearn.ensemble import RandomForestClassifier
 from collections import Counter
+
 import numpy as np
 import pandas as pd
 
 
-
+'''
 # Proportion of successful predictions
 def accuracy(tn, fp, fn, tp):
     return ((tp+tn) / float(tp+fp+tn+fn))
@@ -46,15 +48,15 @@ def ppv(tp, fp):
 # (Recall) - Proportion of correctly identified negatives
 def npv(tn, fn):
     return (tn / float(tn+fn))
-
+'''
 
 def calculate_efficiency(classifier, samples, labels):
 
     pred = cross_val_predict(classifier, samples, labels, cv=5)
     score = cross_val_score(classifier, samples, labels, cv=5, scoring="accuracy")
 
-    print("Accuracy:", score)
-    print("Average accuracy over all runs:", np.average(score))
+    #print("Accuracy:", score)
+    print("Average accuracy over CV runs:", np.average(score))
 
     conf_matrix = confusion_matrix(labels, pred)
     print("Confusion Matrix:\n", conf_matrix)
@@ -64,6 +66,10 @@ def calculate_efficiency(classifier, samples, labels):
 # SVM Classifier
 def svm_classifier():
     return svm.SVC(kernel='rbf', C=1, gamma=1)
+
+# Random Forest
+def rf_classifier():
+    return RandomForestClassifier()
 
 
 # Data formatting
@@ -105,8 +111,13 @@ def main():
     filename = "Bladder cancer gene expressions.csv"
     samples, labels = split_data(filename)
 
+    print("Testing with SVM Classifier")
     c = svm_classifier()
     calculate_efficiency(c, samples, labels)
 
+    print()
+    print("Testing with Random Forest Classifier")
+    r = rf_classifier()
+    calculate_efficiency(r, samples, labels)
 
 main()
