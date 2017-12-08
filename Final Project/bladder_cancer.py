@@ -19,16 +19,19 @@
 
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score, cross_val_predict
-from sklearn.metrics import confusion_matrix
-from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn import svm, tree, ensemble, preprocessing
+
+from sklearn.feature_selection import SelectPercentile, mutual_info_classif, chi2
+from sklearn.feature_selection import SelectFromModel, VarianceThreshold
+from sklearn.pipeline import Pipeline
 from collections import Counter
+from sklearn.neighbors import KNeighborsClassifier
 
 import numpy as np
 import pandas as pd
 
 
-'''
 # Proportion of successful predictions
 def accuracy(tn, fp, fn, tp):
     return ((tp+tn) / float(tp+fp+tn+fn))
@@ -48,28 +51,70 @@ def ppv(tp, fp):
 # (Recall) - Proportion of correctly identified negatives
 def npv(tn, fn):
     return (tn / float(tn+fn))
-'''
 
+
+# Run tests and output stats for given classification
 def calculate_efficiency(classifier, samples, labels):
+    print("> Testing...")
 
     pred = cross_val_predict(classifier, samples, labels, cv=5)
     score = cross_val_score(classifier, samples, labels, cv=5, scoring="accuracy")
 
-    #print("Accuracy:", score)
     print("Average accuracy over CV runs:", np.average(score))
+    #return np.average(score)
 
+    # Print confusion matrix and other stats
+    print(classification_report(labels, pred))
     conf_matrix = confusion_matrix(labels, pred)
     print("Confusion Matrix:\n", conf_matrix)
 
 
 
 # SVM Classifier
-def svm_classifier():
-    return svm.SVC(kernel='rbf', C=1, gamma=1)
+def svm_classifier(c):
+    return svm.SVC(kernel='rbf', C=c, gamma=1, class_weight="balanced")
+
+# Linear SVC
+def lin_svm_classifier(c):
+    return svm.LinearSVC(C=c, loss='hinge', penalty='l2', class_weight="balanced")
 
 # Random Forest
 def rf_classifier():
-    return RandomForestClassifier()
+    #r = ensemble.RandomForestClassifier(class_weight='balanced')
+    #e = ensemble.ExtraTreesClassifier(class_weight='balanced')
+    b = ensemble.BaggingClassifier()
+    return b
+
+# KNN
+def knn_classifier(k):
+    return KNeighborsClassifier(n_neighbors=k)
+
+
+
+# Process and filter features
+def feature_select(samples, labels):
+
+    # Take a percentage of the best features
+    #s = SelectPercentile(chi2).fit_transform(samples, labels)
+
+    # Remove features w/ low variance
+    selector = VarianceThreshold(0.1)
+    s = selector.fit_transform(samples)
+
+    # Standardize dataset
+    #scaled = (preprocessing.MinMaxScaler()).fit_transform(s)
+    #return scaled
+
+    # Remove columns with many 0's
+    #bad_feature_idx = []
+    #
+    #for idx, feature_col in enumerate(s.T):
+    #    if (np.sum(feature_col) >= 200):
+    #        bad_feature_idx.append(idx)
+    #return filter_cols(samples, bad_feature_idx)
+
+    return s
+
 
 
 # Data formatting
@@ -77,10 +122,7 @@ def split_data(filename):
 
     data = pd.read_csv(filename, header=0).as_matrix()
 
-    # TODO: There appears to be 4 superclasses: Ta, T1, T2 and Ti
-    # TODO: For now we will throw out those samples classified as Ti
-    # TODO: There is too few Ti samples (2), doesnt work out nicely
-
+    # Remove Ti samples
     def legit(a):
         return not a[0].startswith('Ti')
 
@@ -93,31 +135,52 @@ def split_data(filename):
 
     s = np.split(filtered, [1], axis=1)
 
-    #samples = np.array(filter(lambda a: !a[0].startswith('Ti'), s[1]))
-
     # Simplify all labels to their inherent groupings (eg. T1, T2, Ta)
     labels = np.reshape(s[0], np.size(s[0]))
     labels = [cancer[:2] for cancer in labels]
 
-    # Uncomment to see sample size for each class
-    #c = Counter(labels)
-    #print(c)
+    counter = Counter(labels)
+    print(counter)
 
     return s[1], labels
+
+
+# Filter 2d array to only selected columns
+def filter_cols(l, cols):
+    return l[:, cols]
+
 
 
 def main():
 
     filename = "Bladder cancer gene expressions.csv"
+
     samples, labels = split_data(filename)
+    filtered_samples = feature_select(samples, labels)
 
-    print("Testing with SVM Classifier")
-    c = svm_classifier()
-    calculate_efficiency(c, samples, labels)
+    print("Sample size before:", samples.shape)
+    print("Sample size after:", filtered_samples.shape)
 
-    print()
-    print("Testing with Random Forest Classifier")
-    r = rf_classifier()
-    calculate_efficiency(r, samples, labels)
+
+    print("===============================================")
+    print("Testing SVM Classifier")
+    print("===============================================")
+    cl = svm_classifier(1)
+    calculate_efficiency(cl, filtered_samples, labels)
+
+
+    print("===============================================")
+    print("Testing Bagging w/ original samples")
+    print("===============================================")
+
+    clas = rf_classifier()
+    calculate_efficiency(clas, samples, labels)
+
+    print("===============================================")
+    print("Testing Bagging w/ selected samples")
+    print("===============================================")
+
+    calculate_efficiency(clas, filtered_samples, labels)
+
 
 main()
