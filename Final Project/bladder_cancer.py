@@ -23,10 +23,11 @@ from sklearn.metrics import confusion_matrix, classification_report
 from sklearn import svm, tree, ensemble, preprocessing
 
 from sklearn.feature_selection import SelectPercentile, mutual_info_classif, chi2
-from sklearn.feature_selection import SelectFromModel, VarianceThreshold
+from sklearn.feature_selection import SelectKBest, SelectFromModel, VarianceThreshold, RFE
 from sklearn.pipeline import Pipeline
 from collections import Counter
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
 
 import numpy as np
 import pandas as pd
@@ -116,18 +117,68 @@ def feature_select(samples, labels):
     return s
 
 # Determine the most important features to the Random Forest classification
-def k_most_important(k, forest_clf, headers, samples, labels):
+def k_most_important(K, headers, samples, labels):
+    print("RF: Finding", K, "best genes\n")
 
+    forest_clf = rf_classifier()
     forest_clf.fit(samples, labels)
 
     importances = forest_clf.feature_importances_
     indices = np.argsort(importances)[::-1]
 
-    top = indices[:k]
+    # Print top k features by their headers (gene)
+    headers_at_indices(headers, indices[:K])
 
-    print(k, "Most important genes (and indices):")
-    for i in top:
-        print(i, "->", headers[i])
+
+# Use chi^2 statistical test via SelectKBest to find most important features
+def k_best(K, headers, samples, labels):
+    print("Chi^2: Finding", K, "best genes\n")
+
+    test = SelectKBest(score_func=chi2, k=K)
+    fitted = test.fit(samples, labels)
+
+    # Summarize scores
+    np.set_printoptions(precision=3)
+    #print(fitted.scores_)
+
+    # Get (58, K) 2D array where samples contain array of values for each
+    # selected feature
+    features = fitted.transform(samples)
+
+    # Extract selected (best) indices and determine corresponding feature gene
+    best_mask = fitted.get_support()
+    indices = [idx for idx, is_best in enumerate(best_mask) if is_best == True]
+    headers_at_indices(headers, indices)
+
+    #samples_to_show = 20
+    #print(features[0:(samples_to_show),:])
+
+
+# Use Recursive Feature Elimination (RFE) to determine important features
+# TODO: This is taking forever, might not be feasible
+def rfe_find_important(K, samples, labels):
+    print("RFE: Finding", K, "best genes\n")
+
+    model = LogisticRegression()
+    print("[X] LR created")
+    rfe = RFE(model, K)
+    print("[X] RFE created")
+
+    fitted = rfe.fit(samples, labels)
+    print("[X] RFE Fit")
+
+    print("Num Features: %d") % fitted.n_features_
+    print("Selected Features: %s") % fitted.support_
+    print("Feature Ranking: %s") % fitted.ranking_
+
+
+# Print the gene names (header) of the specified indices
+def headers_at_indices(headers, indices):
+
+    print("Index \t Gene Biomarker")
+    for i in sorted(indices):
+        print(i, "\t", headers[i])
+    print("\n\n")
 
 
 
@@ -182,17 +233,19 @@ def main():
     print("===============================================")
     cl = svm_classifier(1)
     calculate_efficiency(cl, filtered_samples, labels)
+    print()
+
+    #print("\n===============================================")
+    #print("Testing Forest w/ original samples")
+    #print("===============================================")
+    #calculate_efficiency(forest, samples, labels)
 
 
-    print("\n===============================================")
-    print("Testing Forest w/ original samples")
-    print("===============================================")
+    # Test out differnt feature selection algorithms to find most important
+    k_most_important(10, headers, samples, labels)
+    k_best(10, headers, samples, labels)
 
-    # Random Forest can assign importance values to each feature
-    forest = rf_classifier()
-    k_most_important(25, forest, headers, samples, labels)
-
-    calculate_efficiency(forest, samples, labels)
+    #rfe_find_important(10, samples, labels)
 
 
 main()
