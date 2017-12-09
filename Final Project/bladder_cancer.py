@@ -53,18 +53,18 @@ def npv(tn, fn):
     return (tn / float(tn+fn))
 
 
+
 # Run tests and output stats for given classification
 def calculate_efficiency(classifier, samples, labels):
-    print("> Testing...")
 
     pred = cross_val_predict(classifier, samples, labels, cv=5)
     score = cross_val_score(classifier, samples, labels, cv=5, scoring="accuracy")
 
     print("Average accuracy over CV runs:", np.average(score))
-    #return np.average(score)
 
     # Print confusion matrix and other stats
-    print(classification_report(labels, pred))
+    #print(classification_report(labels, pred))
+
     conf_matrix = confusion_matrix(labels, pred)
     print("Confusion Matrix:\n", conf_matrix)
 
@@ -81,9 +81,9 @@ def lin_svm_classifier(c):
 # Random Forest
 def rf_classifier():
     #r = ensemble.RandomForestClassifier(class_weight='balanced')
-    #e = ensemble.ExtraTreesClassifier(class_weight='balanced')
-    b = ensemble.BaggingClassifier()
-    return b
+    e = ensemble.ExtraTreesClassifier(random_state=0, class_weight='balanced')
+    #b = ensemble.BaggingClassifier()
+    return e
 
 # KNN
 def knn_classifier(k):
@@ -115,20 +115,35 @@ def feature_select(samples, labels):
 
     return s
 
+# Determine the most important features to the Random Forest classification
+def k_most_important(k, forest_clf, headers, samples, labels):
+
+    forest_clf.fit(samples, labels)
+
+    importances = forest_clf.feature_importances_
+    indices = np.argsort(importances)[::-1]
+
+    top = indices[:k]
+
+    print(k, "Most important genes (and indices):")
+    for i in top:
+        print(i, "->", headers[i])
 
 
-# Data formatting
+
+# Pase CSV, separate and format data
 def split_data(filename):
 
+    # Read headers, then data separately
+    headers = list(pd.read_csv(filename, index_col=0,  nrows=1).columns)
     data = pd.read_csv(filename, header=0).as_matrix()
 
-    # Remove Ti samples
+    # Remove 'Ti' samples
     def legit(a):
         return not a[0].startswith('Ti')
 
     bool_arr = np.array([ legit(row) for row in data ])
     filtered = data[bool_arr]
-
 
     # Split input CSV into parts
     # s[0]-2D array of labels , s[1]-2D array of sample data
@@ -139,10 +154,10 @@ def split_data(filename):
     labels = np.reshape(s[0], np.size(s[0]))
     labels = [cancer[:2] for cancer in labels]
 
-    counter = Counter(labels)
-    print(counter)
+    #counter = Counter(labels)
+    #print(counter)
 
-    return s[1], labels
+    return headers, s[1], labels
 
 
 # Filter 2d array to only selected columns
@@ -155,7 +170,7 @@ def main():
 
     filename = "Bladder cancer gene expressions.csv"
 
-    samples, labels = split_data(filename)
+    headers, samples, labels = split_data(filename)
     filtered_samples = feature_select(samples, labels)
 
     print("Sample size before:", samples.shape)
@@ -169,18 +184,15 @@ def main():
     calculate_efficiency(cl, filtered_samples, labels)
 
 
-    print("===============================================")
-    print("Testing Bagging w/ original samples")
-    print("===============================================")
-
-    clas = rf_classifier()
-    calculate_efficiency(clas, samples, labels)
-
-    print("===============================================")
-    print("Testing Bagging w/ selected samples")
+    print("\n===============================================")
+    print("Testing Forest w/ original samples")
     print("===============================================")
 
-    calculate_efficiency(clas, filtered_samples, labels)
+    # Random Forest can assign importance values to each feature
+    forest = rf_classifier()
+    k_most_important(25, forest, headers, samples, labels)
+
+    calculate_efficiency(forest, samples, labels)
 
 
 main()
