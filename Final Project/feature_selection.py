@@ -24,10 +24,13 @@ from sklearn import svm, tree, ensemble, preprocessing
 
 from sklearn.feature_selection import SelectPercentile, mutual_info_classif, chi2
 from sklearn.feature_selection import SelectKBest, SelectFromModel, VarianceThreshold, RFE
+from sklearn.feature_selection import f_classif, mutual_info_classif, f_regression
+from sklearn.feature_selection import mutual_info_regression
 from sklearn.pipeline import Pipeline
 from collections import Counter
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.decomposition import PCA
 
 import numpy as np
 import pandas as pd
@@ -127,14 +130,14 @@ def k_most_important(K, headers, samples, labels):
     indices = np.argsort(importances)[::-1]
 
     # Print top k features by their headers (gene)
-    headers_at_indices(headers, indices[:K])
+    return headers_at_indices(headers, indices[:K])
 
 
 # Use chi^2 statistical test via SelectKBest to find most important features
-def k_best(K, headers, samples, labels):
+def k_best(K, score_fn, headers, samples, labels):
     print("Chi^2: Finding", K, "best genes\n")
 
-    test = SelectKBest(score_func=chi2, k=K)
+    test = SelectKBest(score_func=score_fn, k=K)
     fitted = test.fit(samples, labels)
 
     # Summarize scores
@@ -148,10 +151,20 @@ def k_best(K, headers, samples, labels):
     # Extract selected (best) indices and determine corresponding feature gene
     best_mask = fitted.get_support()
     indices = [idx for idx, is_best in enumerate(best_mask) if is_best == True]
-    headers_at_indices(headers, indices)
+    return headers_at_indices(headers, indices)
 
     #samples_to_show = 20
     #print(features[0:(samples_to_show),:])
+
+
+def pca_k_best(K, headers, samples, labels):
+    print("PCA: Finding", K, "best genes\n")
+
+    pca = PCA(n_components=K)
+    fitted = pca.fit(samples)
+
+    print(fitted.components_.shape)
+    print(fitted.components_)
 
 
 # Use Recursive Feature Elimination (RFE) to determine important features
@@ -160,26 +173,29 @@ def rfe_find_important(K, samples, labels):
     print("RFE: Finding", K, "best genes\n")
 
     model = LogisticRegression()
-    print("[X] LR created")
     rfe = RFE(model, K)
-    print("[X] RFE created")
 
     fitted = rfe.fit(samples, labels)
-    print("[X] RFE Fit")
 
-    print("Num Features: %d") % fitted.n_features_
-    print("Selected Features: %s") % fitted.support_
-    print("Feature Ranking: %s") % fitted.ranking_
+    # Get mask for indicies that are in the top K
+    best_mask = fitted.support_
+    #print("Feature Ranking: %s") % fitted.ranking_
+
+    indices = [idx for idx, is_best in enumerate(best_mask) if is_best == True]
+    return headers_at_indices(headers, indices)
 
 
 # Print the gene names (header) of the specified indices
 def headers_at_indices(headers, indices):
+    h = []
 
     print("Index \t Gene Biomarker")
-    for i in sorted(indices):
+    for i in indices:
         print(i, "\t", headers[i])
-    print("\n\n")
+        h.append(str(headers[i]))
 
+    print("\n\n")
+    return indices, h
 
 
 # Pase CSV, separate and format data
@@ -205,8 +221,8 @@ def split_data(filename):
     labels = np.reshape(s[0], np.size(s[0]))
     labels = [cancer[:2] for cancer in labels]
 
-    #counter = Counter(labels)
-    #print(counter)
+    counter = Counter(labels)
+    print(counter)
 
     return headers, s[1], labels
 
@@ -215,6 +231,11 @@ def split_data(filename):
 def filter_cols(l, cols):
     return l[:, cols]
 
+# Write string to file
+def write_file(filename, data):
+    with open(filename, "w") as output:
+        for element in data:
+            output.write(str(element) + '\n')
 
 
 def main():
@@ -240,12 +261,38 @@ def main():
     #print("===============================================")
     #calculate_efficiency(forest, samples, labels)
 
+    #h_best = []
+    #ind_best = []
 
     # Test out differnt feature selection algorithms to find most important
-    k_most_important(10, headers, samples, labels)
-    k_best(10, headers, samples, labels)
+    ind_best, h_best = k_most_important(100, headers, samples, labels)
+    #h_best += h_rf
+    #ind_best += ind_rf
+    write_file("rf_50_best.txt", h_best)
 
-    #rfe_find_important(10, samples, labels)
+    # Can use information gain via f_classif or chi2
+    ind_chi, h_chi = k_best(100, chi2, headers, samples, labels)
+    h_best += h_chi
+    ind_best += ind_chi
+    write_file("chi2_50_best.txt", h_chi)
 
+    # Indicies of most common -- not really working
+    #common_idx = [i for i, _ in (Counter(ind)).most_common(50)]
+
+    #pca_k_best(10, headers, samples, labels)
+
+    # Write RFE results to file
+    ind_rfe, h_rfe = rfe_find_important(100, samples, labels)
+    write_file("rfe_50_best.txt", h_rfe)
+    h_best += h_rfe
+    ind_best += ind_rfe
+
+    # Now that all results have been combined, print out 50 most common
+    # among all evaluation methods
+
+    h_common = (Counter(h_best)).most_common(50)
+    #ind_common = (Counter(ind_best)).most_common(50)
+    print(h_common)
+    write_file("most_common_50_best.txt", h_common)
 
 main()
