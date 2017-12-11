@@ -120,7 +120,7 @@ def feature_select(samples, labels):
     return s
 
 # Determine the most important features to the Random Forest classification
-def k_most_important(K, headers, samples, labels):
+def k_feature_importance(K, headers, samples, labels):
     print("RF: Finding", K, "best genes\n")
 
     forest_clf = rf_classifier()
@@ -265,7 +265,7 @@ def main():
     #ind_best = []
 
     # Test out differnt feature selection algorithms to find most important
-    ind_best, h_best = k_most_important(100, headers, samples, labels)
+    ind_best, h_best = k_feature_importance(100, headers, samples, labels)
     #h_best += h_rf
     #ind_best += ind_rf
     write_file("rf_50_best.txt", h_best)
