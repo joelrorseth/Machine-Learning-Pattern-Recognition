@@ -25,29 +25,51 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
 
+from sklearn.metrics import recall_score
+from imblearn.over_sampling import SMOTE
+
 import numpy as np
 import pandas as pd
 
 
 # Run tests and output stats for given classification
-def calculate_efficiency(classifier, samples, labels):
+def calculate_efficiency(classifier, headers, samples, labels):
 
-    pred = cross_val_predict(classifier, samples, labels, cv=5)
-    score = cross_val_score(classifier, samples, labels, cv=5, scoring="accuracy")
+    #pred = cross_val_predict(classifier, samples, labels, cv=5)
+    #score = cross_val_score(classifier, samples, labels, cv=5, scoring="accuracy")
 
-    print("Average accuracy over CV runs:", np.average(score))
+    #print("Average accuracy over CV runs:", np.average(score))
+    #conf_matrix = confusion_matrix(labels, pred)
+    #print("Confusion Matrix:\n", conf_matrix)
+    #return np.average(score)
 
-    # Print confusion matrix and other stats
-    #print(classification_report(labels, pred))
 
-    conf_matrix = confusion_matrix(labels, pred)
-    print("Confusion Matrix:\n", conf_matrix)
+    training_features, test_features, training_target, test_target, =\
+            train_test_split(samples, labels, test_size = .1, random_state=12)
+
+    x_train, x_val, y_train, y_val = train_test_split(\
+            training_features, training_target, test_size = 0.1, random_state=12)
+
+    sm = SMOTE(random_state=12, ratio = 1.0)
+    x_train_res, y_train_res = sm.fit_sample(x_train, y_train)
+
+
+    # Must split dataset into test/train BEFORE over-sampling to avoid bias!
+    # Otherwise, duplicated samples could end up in train and test sets
+    classifier.fit(x_train_res, y_train_res)
+
+    print("Validation Results:")
+    print(classifier.score(x_val, y_val))
+    #print(recall_score(y_val, classifier.predict(x_val)))
+    print('\nTest Results')
+    print(classifier.score(test_features, test_target))
+    #print(recall_score(test_target, classifier.predict(test_features)))
 
 
 
 # SVM Classifier
 def svm_classifier():
-    return svm.SVC(kernel='rbf', C=1, gamma=1, class_weight="balanced")
+    return svm.SVC(kernel='rbf', C=1, gamma='auto', class_weight="balanced")
 
 # Linear SVC
 def lin_svm_classifier():
@@ -56,9 +78,9 @@ def lin_svm_classifier():
 # Random Forest
 def rf_classifier():
     #r = ensemble.RandomForestClassifier(class_weight='balanced')
-    e = ensemble.ExtraTreesClassifier(random_state=0, class_weight='balanced')
+    #e = ensemble.ExtraTreesClassifier(random_state=0, class_weight='balanced')
     #b = ensemble.BaggingClassifier()
-    return e
+    return ensemble.RandomForestClassifier(n_estimators=25, random_state=12)
 
 # KNN
 def knn_classifier(k):
@@ -132,16 +154,16 @@ def main():
     print("===============================================")
 
     print("SVM Classification on original dataset")
-    calculate_efficiency(svm_classifier(), samples, labels)
+    calculate_efficiency(svm_classifier(), headers, samples, labels)
 
     print("\nFeature Selection: Random Forest (Feature Importance)")
-    calculate_efficiency(svm_classifier(), samples_RF, labels)
+    calculate_efficiency(svm_classifier(), headers, samples_RF, labels)
 
     print("\nFeature Selection: Recursive Feature Elimination (RFE)")
-    calculate_efficiency(svm_classifier(), samples_RFE, labels)
+    calculate_efficiency(svm_classifier(), headers, samples_RFE, labels)
 
     print("\nFeature Selection: Chi^2 Scoring Function")
-    calculate_efficiency(svm_classifier(), samples_CHI2, labels)
+    calculate_efficiency(svm_classifier(), headers, samples_CHI2, labels)
 
 
 
@@ -151,16 +173,16 @@ def main():
     print("===============================================")
 
     print("RF Classification on original dataset")
-    calculate_efficiency(rf_classifier(), samples, labels)
+    calculate_efficiency(rf_classifier(), headers, samples, labels)
 
     print("\nFeature Selection: Random Forest (Feature Importance)")
-    calculate_efficiency(rf_classifier(), samples_RF, labels)
+    calculate_efficiency(rf_classifier(), headers, samples_RF, labels)
 
     print("\nFeature Selection: Recursive Feature Elimination (RFE)")
-    calculate_efficiency(rf_classifier(), samples_RFE, labels)
+    calculate_efficiency(rf_classifier(), headers, samples_RFE, labels)
 
     print("\nFeature Selection: Chi^2 Scoring Function")
-    calculate_efficiency(rf_classifier(), samples_CHI2, labels)
+    calculate_efficiency(rf_classifier(), headers, samples_CHI2, labels)
 
 
 
@@ -170,15 +192,15 @@ def main():
     print("===============================================")
 
     print("KNN Classification on original dataset")
-    calculate_efficiency(knn_classifier(20), samples, labels)
+    calculate_efficiency(knn_classifier(20), headers, samples, labels)
 
     print("\nFeature Selection: Random Forest (Feature Importance)")
-    calculate_efficiency(knn_classifier(20), samples_RF, labels)
+    calculate_efficiency(knn_classifier(20), headers, samples_RF, labels)
 
     print("\nFeature Selection: Recursive Feature Elimination (RFE)")
-    calculate_efficiency(knn_classifier(20), samples_RFE, labels)
+    calculate_efficiency(knn_classifier(20), headers, samples_RFE, labels)
 
     print("\nFeature Selection: Chi^2 Scoring Function")
-    calculate_efficiency(knn_classifier(20), samples_CHI2, labels)
+    calculate_efficiency(knn_classifier(20), headers, samples_CHI2, labels)
 
 main()
