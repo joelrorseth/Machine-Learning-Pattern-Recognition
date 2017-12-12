@@ -32,6 +32,7 @@ from sklearn.linear_model import LogisticRegression
 import numpy as np
 import pandas as pd
 from numpy import concatenate
+import random
 
 # Proportion of successful predictions
 def accuracy(tn, fp, fn, tp):
@@ -189,6 +190,43 @@ def headers_at_indices(headers, indices):
     print("\n\n")
 
 
+# Return samples array modified to duplicate under-represented class' samples
+def balance_samples_to_largest(samples, labels):
+    balanced_s = samples
+    balanced_l = labels
+
+    # Determine class with the most samples belonging, scale others to this
+    counter = Counter(labels)
+    largest_rep = counter.most_common()[0][1]
+
+    for stage in counter.keys():
+        # For classes with less than largest representation, insert more
+        if counter[stage] < largest_rep:
+
+            amount = largest_rep - counter[stage]
+            balanced_s, balanced_l = reinsert_samples(\
+                    amount, stage, balanced_s, balanced_l)
+
+    return balanced_s, balanced_l
+
+
+# Insert 'amount' duplicated samples belonging to class 'stage' into 'samples'
+def reinsert_samples(amount, stage, samples, labels):
+    modified_s = samples
+    modified_l = labels
+
+    # Define filter function to obtain array of only samples of class 'stage'
+    stage_mask = np.array([ (label == stage) for label in labels ])
+    filtered_samples = samples[stage_mask]
+
+    # Insert random samples back into samples (and label into labels)
+    for i in range(amount):
+        modified_s = np.concatenate((modified_s,\
+                [random.choice(filtered_samples)]))
+        modified_l.append(stage)
+
+    return modified_s, modified_l
+
 
 # Pase CSV, separate and format data
 def split_data(filename):
@@ -204,23 +242,21 @@ def split_data(filename):
     filtered = data[bool_arr]
 
     #balance out T1 to Ta
-    def T1_stage_extracted(a):
-        return a[0].startswith('T1')
-    bool_arrT1 = np.array([ T1_stage_extracted(row) for row in filtered ])
-    data_temp_T1 = filtered
-    T1_data = data_temp_T1[bool_arrT1]
-    filtered = concatenate((filtered,T1_data[:4]), axis=0)
+    #def T1_stage_extracted(a):
+    #    return a[0].startswith('T1')
+    #bool_arrT1 = np.array([ T1_stage_extracted(row) for row in filtered ])
+    #data_temp_T1 = filtered
+    #T1_data = data_temp_T1[bool_arrT1]
+    #filtered = concatenate((filtered,T1_data[:4]), axis=0)
 
     #balance out T2 to Ta
-    def T2_stage_extracted(a):
-        return a[0].startswith('T2')
-    bool_arrT2 = np.array([ T2_stage_extracted(row) for row in filtered ])
-    data_temp_T2 = filtered
-    T2_data = data_temp_T2[bool_arrT2]
-    T2_data = concatenate((T2_data,T2_data,T2_data), axis=0)
-    filtered = concatenate((filtered,T2_data[:19]), axis=0)
-
-
+    #def T2_stage_extracted(a):
+    #    return a[0].startswith('T2')
+    #bool_arrT2 = np.array([ T2_stage_extracted(row) for row in filtered ])
+    #data_temp_T2 = filtered
+    #T2_data = data_temp_T2[bool_arrT2]
+    #T2_data = concatenate((T2_data,T2_data,T2_data), axis=0)
+    #filtered = concatenate((filtered,T2_data[:19]), axis=0)
 
     # Split input CSV into parts
     # s[0]-2D array of labels , s[1]-2D array of sample data
@@ -248,7 +284,11 @@ def main():
     filename = "Bladder cancer gene expressions.csv"
 
     headers, samples, labels = split_data(filename)
-    filtered_samples = feature_select(samples, labels)
+
+    # Attempt manual class balancing
+    balance_samples_to_largest(samples, labels)
+
+    #filtered_samples = feature_select(samples, labels)
 
     # print("Sample size before:", samples.shape)
     # print("Sample size after:", filtered_samples.shape)
@@ -268,9 +308,9 @@ def main():
 
 
     # Test out differnt feature selection algorithms to find most important
-    for k in range(1, 100):
-        k_most_important(k, headers, samples, labels)
-        k_best(k, headers, samples, labels)
+    #for k in range(1, 100):
+    #    k_most_important(k, headers, samples, labels)
+    #    k_best(k, headers, samples, labels)
     #rfe_find_important(10, samples, labels)
 
 

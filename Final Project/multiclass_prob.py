@@ -26,25 +26,43 @@ from sklearn.linear_model import LogisticRegression, Perceptron, SGDClassifier
 from collections import Counter
 import numpy as np
 import pandas as pd
-
+import random
 
 # Run tests and output stats for given classification
 def calculate_efficiency(classifier, samples, labels):
+    
+    # Separate data into test and train sets
+    samples_train, samples_test, labels_train, labels_test =\
+        train_test_split(samples, labels, random_state=42, test_size=0.1)
+    
+    print("Before:", Counter(labels_train))
+    
+    # Now we can avoid bias and safely rebalance classes by increasing minorities
+    # This must be done in training set only! Otherwise dups could end up in train & test
+    samples_train, labels_train =\
+        balance_samples_to_largest(samples_train, labels_train)
 
-    classifier.fit(samples, labels)
+    print("After:", Counter(labels_train))
+    
+    # Train samples on rebalanced sample set
+    classifier.fit(samples_train, labels_train)
 
+    print("Accuracy:", classifier.score(samples_test, labels_test))
+
+    # Determine confusion matrix
+    labels_pred = classifier.predict(samples_test)
+    conf_matrix = confusion_matrix(labels_test, labels_pred)
+    print(conf_matrix)
+
+    # OLD CODE
     # Determine cross-validated score
-    pred = cross_val_predict(classifier, samples, labels, cv=5)
-    score = cross_val_score(classifier, samples, labels, cv=5,\
-            scoring="accuracy")
-
-    print("Average accuracy over CV runs:", np.average(score))
-
+    #pred = cross_val_predict(classifier, samples, labels, cv=5)
+    #score = cross_val_score(classifier, samples, labels, cv=5,scoring="accuracy")
+    #print("Average accuracy over CV runs:", np.average(score))
     # Print confusion matrix and other stats
     #print(classification_report(labels, pred))
-
-    conf_matrix = confusion_matrix(labels, pred)
-    print("Confusion Matrix:\n", conf_matrix)
+    #conf_matrix = confusion_matrix(labels, pred)
+    #print("Confusion Matrix:\n", conf_matrix)
 
 
 
@@ -115,6 +133,42 @@ def knn_classifier():
     return KNeighborsClassifier(n_neighbors=20)
 
 
+# Return samples array modified to duplicate under-represented class' samples
+def balance_samples_to_largest(samples, labels):
+    balanced_s = samples
+    balanced_l = labels
+            
+    # Determine class with the most samples belonging, scale others to this
+    counter = Counter(labels)
+    largest_rep = counter.most_common()[0][1]
+            
+    for stage in counter.keys():
+        # For classes with less than largest representation, insert more
+        if counter[stage] < largest_rep:
+                    
+            amount = largest_rep - counter[stage]
+            balanced_s, balanced_l = reinsert_samples(\
+                amount, stage, balanced_s, balanced_l)
+                        
+    return balanced_s, balanced_l
+                            
+                            
+# Insert 'amount' duplicated samples belonging to class 'stage' into 'samples'
+def reinsert_samples(amount, stage, samples, labels):
+    modified_s = samples
+    modified_l = labels
+                                        
+    # Define filter function to obtain array of only samples of class 'stage'
+    stage_mask = np.array([ (label == stage) for label in labels ])
+    filtered_samples = samples[stage_mask]
+
+    # Insert random samples back into samples (and label into labels)
+    for i in range(amount):
+        modified_s = np.concatenate((modified_s,\
+            [random.choice(filtered_samples)]))
+        modified_l.append(stage)
+                                                
+    return modified_s, modified_l
 
 
 # Pase CSV, separate and format data
