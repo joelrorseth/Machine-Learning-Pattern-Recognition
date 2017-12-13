@@ -22,6 +22,8 @@ from sklearn.ensemble import BaggingClassifier, GradientBoostingClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression, Perceptron, SGDClassifier
+from sklearn.cross_validation import StratifiedShuffleSplit
+
 
 from collections import Counter
 import numpy as np
@@ -33,7 +35,7 @@ def calculate_efficiency(classifier, samples, labels):
     
     # Separate data into test and train sets
     samples_train, samples_test, labels_train, labels_test =\
-        train_test_split(samples, labels, random_state=42, test_size=0.1)
+        train_test_split(samples, labels, random_state=42, test_size=0.20, stratify=labels)
     
     print("Before:", Counter(labels_train))
     
@@ -46,7 +48,7 @@ def calculate_efficiency(classifier, samples, labels):
     
     # Train samples on rebalanced sample set
     classifier.fit(samples_train, labels_train)
-
+    
     print("Accuracy:", classifier.score(samples_test, labels_test))
 
     # Determine confusion matrix
@@ -152,7 +154,7 @@ def balance_samples_to_largest(samples, labels):
                         
     return balanced_s, balanced_l
                             
-                            
+                           
 # Insert 'amount' duplicated samples belonging to class 'stage' into 'samples'
 def reinsert_samples(amount, stage, samples, labels):
     modified_s = samples
@@ -170,6 +172,18 @@ def reinsert_samples(amount, stage, samples, labels):
                                                 
     return modified_s, modified_l
 
+# Import list of genes, return original sample set filtered to these genes only
+def import_features(filename, headers, samples):
+
+    # Map genes to their indices in the sample set for quick lookup
+    gene_indices = {k: v for v, k in enumerate(headers)}
+
+    with open(filename) as f:
+        genes = [gene.strip('\n') for gene in f.readlines()]
+
+    # Determine indices of genes read from file, return sample subset
+    filtered_gene_indices = [gene_indices[gene] for gene in genes]
+    return filter_cols(samples, filtered_gene_indices)
 
 # Pase CSV, separate and format data
 def split_data(filename):
@@ -211,38 +225,59 @@ def main():
     filename = "Bladder cancer gene expressions.csv"
     headers, samples, labels = split_data(filename)
 
-    classifiers = [svm_classifier, lin_svm_classifier, rf_classifier,\
-            extra_trees_classifier, bagging_classifier, knn_classifier,\
-            ova_gaussian_process, ovo_gaussian_process,\
-            logistic_regression, sgd_classifier, perceptron]
+    
+    for k in range(1,11):
+        # Filter samples to top 100 features as selected by several algorithms
+        samples_RF = import_features("rf_" + str(k) + "_best.txt", headers, samples)
+        
+        classifiers = [svm_classifier, lin_svm_classifier, rf_classifier,\
+                extra_trees_classifier, bagging_classifier, knn_classifier,\
+                ova_gaussian_process, ovo_gaussian_process,\
+                logistic_regression, sgd_classifier, perceptron]
 
-    names = ["SVM Classifier RBF Kernel", "SVM Classifier Linear Kernel",\
-            "Random Forest Classifier", "Extra Trees Classifier", \
-            "Bagging Classifier", "K-Nearest Neighbors Classifier K=20",
-            "One-Vs.-All Gaussian Process",\
-            "One-Vs.-One Gaussian Process", "Logistic Regression",\
-            "Perceptron"]
+        names = ["SVM Classifier RBF Kernel", "SVM Classifier Linear Kernel",\
+                "Random Forest Classifier", "Extra Trees Classifier", \
+                "Bagging Classifier", "K-Nearest Neighbors Classifier K=20",
+                "One-Vs.-All Gaussian Process",\
+                "One-Vs.-One Gaussian Process", "Logistic Regression",\
+                "Perceptron"]
 
-    # Test each classifier on its own, One vs. All and One vs. One
-    for i in range(len(classifiers)):
-        classifier = classifiers[i]
-        name = names[i]
+        # Test each classifier on its own, One vs. All and One vs. One
+        for i in range(len(classifiers)):
+            classifier = classifiers[i]
+            name = names[i-1]
 
-        print("===============================================")
-        print("Testing", name)
-        print("===============================================")
+            print("===============================================")
+            print("Testing", name, "kbest: ", k)
+            print("===============================================")
 
-        print("Inherent Multi-Class Classification:")
-        calculate_efficiency(classifier(), samples, labels)
+            print("Inherent Multi-Class Classification:")
+            calculate_efficiency(classifier(), samples_RF, labels)
 
-        print("Used in One-Vs-All Meta-Estimator:")
-        o_vs_a = one_vs_all(classifier())
-        calculate_efficiency(o_vs_a, samples, labels)
+            print("Used in One-Vs-All Meta-Estimator:")
+            o_vs_a = one_vs_all(classifier())
+            calculate_efficiency(o_vs_a, samples_RF, labels)
 
-        print("Used in One-Vs-One Meta-Estimator:")
-        o_vs_o = one_vs_one(classifier())
-        calculate_efficiency(o_vs_o, samples, labels)
+            print("Used in One-Vs-One Meta-Estimator:")
+            o_vs_o = one_vs_one(classifier())
+            calculate_efficiency(o_vs_o, samples_RF, labels)
 
+            print()
+
+        print()
+        print()
+        print()
+        print()
+        print()
+        print()
+        print()
+        print("Next run")
+        print()
+        print()
+        print()
+        print()
+        print()
+        print()
         print()
 
 

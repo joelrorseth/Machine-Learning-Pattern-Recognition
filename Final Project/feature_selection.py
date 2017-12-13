@@ -265,34 +265,35 @@ def main():
     #ind_best = []
 
     # Test out differnt feature selection algorithms to find most important
-    ind_best, h_best = k_feature_importance(100, headers, samples, labels)
-    #h_best += h_rf
-    #ind_best += ind_rf
-    write_file("rf_50_best.txt", h_best)
+    for k in range(1,11):
+        ind_best, h_best = k_feature_importance(k, headers, samples, labels)
+        #h_best += h_rf
+        #ind_best += ind_rf
+        write_file("rf_" + str(k) + "_best.txt", h_best)
 
-    # Can use information gain via f_classif or chi2
-    ind_chi, h_chi = k_best(100, chi2, headers, samples, labels)
-    h_best += h_chi
-    ind_best += ind_chi
-    write_file("chi2_50_best.txt", h_chi)
+    # # Can use information gain via f_classif or chi2
+    # ind_chi, h_chi = k_best(100, chi2, headers, samples, labels)
+    # h_best += h_chi
+    # ind_best += ind_chi
+    # write_file("chi2_50_best.txt", h_chi)
 
-    # Indicies of most common -- not really working
-    #common_idx = [i for i, _ in (Counter(ind)).most_common(50)]
+    # # Indicies of most common -- not really working
+    # #common_idx = [i for i, _ in (Counter(ind)).most_common(50)]
 
-    #pca_k_best(10, headers, samples, labels)
+    # #pca_k_best(10, headers, samples, labels)
 
-    # Write RFE results to file
-    ind_rfe, h_rfe = rfe_find_important(100, samples, labels)
-    write_file("rfe_50_best.txt", h_rfe)
-    h_best += h_rfe
-    ind_best += ind_rfe
+    # # Write RFE results to file
+    # ind_rfe, h_rfe = rfe_find_important(100, samples, labels)
+    # write_file("rfe_50_best.txt", h_rfe)
+    # h_best += h_rfe
+    # ind_best += ind_rfe
 
-    # Now that all results have been combined, print out 50 most common
-    # among all evaluation methods
+    # # Now that all results have been combined, print out 50 most common
+    # # among all evaluation methods
 
-    h_common = (Counter(h_best)).most_common(50)
-    #ind_common = (Counter(ind_best)).most_common(50)
-    print(h_common)
-    write_file("most_common_50_best.txt", h_common)
+    # h_common = (Counter(h_best)).most_common(50)
+    # #ind_common = (Counter(ind_best)).most_common(50)
+    # print(h_common)
+    # write_file("most_common_50_best.txt", h_common)
 
 main()
