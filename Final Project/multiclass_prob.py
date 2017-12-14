@@ -7,8 +7,9 @@
 # - Michael Bianchi
 #
 # This file explores potential solutions to The Multi-Class Problem, aiming
-# to test multiclass algorithms that fall into the cateogyr of One-Vs-One,
-# One-Vs-All and inherently multiclass classifiers.
+# to test multiclass algorithms that fall into the category of One-Vs-One,
+# One-Vs-All and inherently multiclass classifiers. This is done using feature
+# selected features from the feature_selection.py script.
 #
 
 from sklearn.model_selection import train_test_split
@@ -32,23 +33,23 @@ import random
 
 # Run tests and output stats for given classification
 def calculate_efficiency(classifier, samples, labels):
-    
+
     # Separate data into test and train sets
     samples_train, samples_test, labels_train, labels_test =\
         train_test_split(samples, labels, random_state=42, test_size=0.20, stratify=labels)
-    
+
     print("Before:", Counter(labels_train))
-    
+
     # Now we can avoid bias and safely rebalance classes by increasing minorities
     # This must be done in training set only! Otherwise dups could end up in train & test
     samples_train, labels_train =\
         balance_samples_to_largest(samples_train, labels_train)
 
     print("After:", Counter(labels_train))
-    
+
     # Train samples on rebalanced sample set
     classifier.fit(samples_train, labels_train)
-    
+
     print("Accuracy:", classifier.score(samples_test, labels_test))
 
     # Determine confusion matrix
@@ -119,47 +120,49 @@ def rf_classifier():
 def gradient_boosting():
     return GradientBoostingClassifier()
 
-
+# Logistic Regression
 def logistic_regression():
     return LogisticRegression(multi_class="ovr")
 
+# SGD
 def sgd_classifier():
     return SGDClassifier()
 
+# Perceptron
 def perceptron():
     return Perceptron()
-
 
 # KNN w/ k=20
 def knn_classifier():
     return KNeighborsClassifier(n_neighbors=20)
 
 
+
 # Return samples array modified to duplicate under-represented class' samples
 def balance_samples_to_largest(samples, labels):
     balanced_s = samples
     balanced_l = labels
-            
+
     # Determine class with the most samples belonging, scale others to this
     counter = Counter(labels)
     largest_rep = counter.most_common()[0][1]
-            
+
     for stage in counter.keys():
         # For classes with less than largest representation, insert more
         if counter[stage] < largest_rep:
-                    
+
             amount = largest_rep - counter[stage]
             balanced_s, balanced_l = reinsert_samples(\
                 amount, stage, balanced_s, balanced_l)
-                        
+
     return balanced_s, balanced_l
-                            
-                           
+
+
 # Insert 'amount' duplicated samples belonging to class 'stage' into 'samples'
 def reinsert_samples(amount, stage, samples, labels):
     modified_s = samples
     modified_l = labels
-                                        
+
     # Define filter function to obtain array of only samples of class 'stage'
     stage_mask = np.array([ (label == stage) for label in labels ])
     filtered_samples = samples[stage_mask]
@@ -169,8 +172,9 @@ def reinsert_samples(amount, stage, samples, labels):
         modified_s = np.concatenate((modified_s,\
             [random.choice(filtered_samples)]))
         modified_l.append(stage)
-                                                
+
     return modified_s, modified_l
+
 
 # Import list of genes, return original sample set filtered to these genes only
 def import_features(filename, headers, samples):
@@ -184,6 +188,7 @@ def import_features(filename, headers, samples):
     # Determine indices of genes read from file, return sample subset
     filtered_gene_indices = [gene_indices[gene] for gene in genes]
     return filter_cols(samples, filtered_gene_indices)
+
 
 # Pase CSV, separate and format data
 def split_data(filename):
@@ -225,11 +230,12 @@ def main():
     filename = "Bladder cancer gene expressions.csv"
     headers, samples, labels = split_data(filename)
 
-    
+
     for k in range(1,11):
         # Filter samples to top 100 features as selected by several algorithms
-        samples_RF = import_features("rf_" + str(k) + "_best.txt", headers, samples)
-        
+        p = "Feature Selected Results/Random Forest Selection/"
+        samples_RF = import_features(p+"rf_" + str(k) + "_best.txt", headers, samples)
+
         classifiers = [svm_classifier, lin_svm_classifier, rf_classifier,\
                 extra_trees_classifier, bagging_classifier, knn_classifier,\
                 ova_gaussian_process, ovo_gaussian_process,\
@@ -242,6 +248,7 @@ def main():
                 "One-Vs.-One Gaussian Process", "Logistic Regression",\
                 "Perceptron"]
 
+        # Try all multi-class methods
         # Test each classifier on its own, One vs. All and One vs. One
         for i in range(len(classifiers)):
             classifier = classifiers[i]
@@ -264,21 +271,7 @@ def main():
 
             print()
 
-        print()
-        print()
-        print()
-        print()
-        print()
-        print()
-        print()
-        print("Next run")
-        print()
-        print()
-        print()
-        print()
-        print()
-        print()
-        print()
+        print("\n\n\n")
 
 
 main()

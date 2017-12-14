@@ -8,7 +8,7 @@
 #
 # In this script, we establish a test to run several classifiers on the original
 # dataset, then compare the results of running it again on various feature
-# selected datasets.
+# selected datasets. This is a test file similar to feature_selection_compare.py
 #
 
 from sklearn.model_selection import train_test_split

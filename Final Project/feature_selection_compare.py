@@ -35,35 +35,13 @@ import pandas as pd
 # Run tests and output stats for given classification
 def calculate_efficiency(classifier, headers, samples, labels):
 
-    #pred = cross_val_predict(classifier, samples, labels, cv=5)
-    #score = cross_val_score(classifier, samples, labels, cv=5, scoring="accuracy")
+    pred = cross_val_predict(classifier, samples, labels, cv=5)
+    score = cross_val_score(classifier, samples, labels, cv=5, scoring="accuracy")
 
-    #print("Average accuracy over CV runs:", np.average(score))
-    #conf_matrix = confusion_matrix(labels, pred)
-    #print("Confusion Matrix:\n", conf_matrix)
-    #return np.average(score)
-
-
-    training_features, test_features, training_target, test_target, =\
-            train_test_split(samples, labels, test_size = .1, random_state=12)
-
-    x_train, x_val, y_train, y_val = train_test_split(\
-            training_features, training_target, test_size = 0.1, random_state=12)
-
-    sm = SMOTE(random_state=12, ratio = 1.0)
-    x_train_res, y_train_res = sm.fit_sample(x_train, y_train)
-
-
-    # Must split dataset into test/train BEFORE over-sampling to avoid bias!
-    # Otherwise, duplicated samples could end up in train and test sets
-    classifier.fit(x_train_res, y_train_res)
-
-    print("Validation Results:")
-    print(classifier.score(x_val, y_val))
-    #print(recall_score(y_val, classifier.predict(x_val)))
-    print('\nTest Results')
-    print(classifier.score(test_features, test_target))
-    #print(recall_score(test_target, classifier.predict(test_features)))
+    print("Average accuracy over CV runs:", np.average(score))
+    conf_matrix = confusion_matrix(labels, pred)
+    print("Confusion Matrix:\n", conf_matrix)
+    return np.average(score)
 
 
 
@@ -143,9 +121,13 @@ def main():
     headers, samples, labels = split_data(filename)
 
     # Filter samples to top 100 features as selected by several algorithms
-    samples_RF = import_features("rf_100_best.txt", headers, samples)
-    samples_RFE = import_features("rfe_100_best.txt", headers, samples)
-    samples_CHI2 = import_features("chi2_100_best.txt", headers, samples)
+
+    p1 = "Feature Selected Results/Random Forest Selection/rf_100_best.txt"
+    p2 = "Feature Selected Results/RFE Selection/rfe_100_best.txt"
+    p3 = "Feature Selected Results/Chi2 Selection/chi2_100_best.txt"
+    samples_RF = import_features(p1, headers, samples)
+    samples_RFE = import_features(p2, headers, samples)
+    samples_CHI2 = import_features(p3, headers, samples)
 
 
     # Compare SVM classification across different feature selected samples

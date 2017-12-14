@@ -6,15 +6,9 @@
 # - Joel Rorseth
 # - Michael Bianchi
 #
-# The problem consists of finding meaningful biomarkers for different bladder
-# cancer stages. This can be done via classification and feature selection for
-# selecting genes that contribute to one or more different classifications
-# between stages or among all stages. The dataset contains several samples that
-# belong to different stages. The stage (class) is given in the first column.
-# All other columns contain expressions (features) for many different genes. You
-# are free to work on one or more stages as follows: classification, solving the
-# multi-class problem, feature selection, other aspects, or a combination of
-# these. For the multiclass problem, you can consider 3 classes: T1, T2 and Ta.
+# This script attempts several feature selection algorithms on the original
+# dataset. These results were used alongside feature rankings from Weka to
+# aid in achieving the best classification.
 #
 
 from sklearn.model_selection import train_test_split
@@ -103,21 +97,8 @@ def feature_select(samples, labels):
 
     # Remove features w/ low variance
     selector = VarianceThreshold(0.1)
-    s = selector.fit_transform(samples)
+    return selector.fit_transform(samples)
 
-    # Standardize dataset
-    #scaled = (preprocessing.MinMaxScaler()).fit_transform(s)
-    #return scaled
-
-    # Remove columns with many 0's
-    #bad_feature_idx = []
-    #
-    #for idx, feature_col in enumerate(s.T):
-    #    if (np.sum(feature_col) >= 200):
-    #        bad_feature_idx.append(idx)
-    #return filter_cols(samples, bad_feature_idx)
-
-    return s
 
 # Determine the most important features to the Random Forest classification
 def k_feature_importance(K, headers, samples, labels):
@@ -249,51 +230,34 @@ def main():
     print("Sample size after:", filtered_samples.shape)
 
 
-    print("===============================================")
-    print("Testing SVM Classifier")
-    print("===============================================")
-    cl = svm_classifier(1)
-    calculate_efficiency(cl, filtered_samples, labels)
-    print()
-
-    #print("\n===============================================")
-    #print("Testing Forest w/ original samples")
-    #print("===============================================")
-    #calculate_efficiency(forest, samples, labels)
-
-    #h_best = []
-    #ind_best = []
-
     # Test out differnt feature selection algorithms to find most important
+    # Mind top k RF features, save in separate files
     for k in range(1,11):
         ind_best, h_best = k_feature_importance(k, headers, samples, labels)
         #h_best += h_rf
         #ind_best += ind_rf
         write_file("rf_" + str(k) + "_best.txt", h_best)
 
-    # # Can use information gain via f_classif or chi2
-    # ind_chi, h_chi = k_best(100, chi2, headers, samples, labels)
-    # h_best += h_chi
-    # ind_best += ind_chi
-    # write_file("chi2_50_best.txt", h_chi)
+    # Can use information gain via f_classif or chi2
+    ind_chi, h_chi = k_best(100, chi2, headers, samples, labels)
+    h_best += h_chi
+    ind_best += ind_chi
+    write_file("chi2_50_best.txt", h_chi)
 
-    # # Indicies of most common -- not really working
-    # #common_idx = [i for i, _ in (Counter(ind)).most_common(50)]
 
-    # #pca_k_best(10, headers, samples, labels)
+    # Write RFE results to file
+    # Note: This feature selection algorithm takes a LONG TIME (6 hrs?)
+    ind_rfe, h_rfe = rfe_find_important(100, samples, labels)
+    write_file("rfe_50_best.txt", h_rfe)
+    h_best += h_rfe
+    ind_best += ind_rfe
 
-    # # Write RFE results to file
-    # ind_rfe, h_rfe = rfe_find_important(100, samples, labels)
-    # write_file("rfe_50_best.txt", h_rfe)
-    # h_best += h_rfe
-    # ind_best += ind_rfe
+    # Now that all results have been combined, print out 50 most common
+    # among all evaluation methods
 
-    # # Now that all results have been combined, print out 50 most common
-    # # among all evaluation methods
-
-    # h_common = (Counter(h_best)).most_common(50)
-    # #ind_common = (Counter(ind_best)).most_common(50)
-    # print(h_common)
-    # write_file("most_common_50_best.txt", h_common)
+    h_common = (Counter(h_best)).most_common(50)
+    #ind_common = (Counter(ind_best)).most_common(50)
+    print(h_common)
+    write_file("most_common_50_best.txt", h_common)
 
 main()
